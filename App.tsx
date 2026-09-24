@@ -20,6 +20,7 @@ type Habit = {
 };
 
 const STORAGE_KEY = 'habit-tracker-demo-habits';
+const SEEDED_KEY = 'habit-tracker-demo-seeded';
 
 const DEFAULT_HABITS: Habit[] = [
   { id: 'default-1', name: 'Drink water', streak: 3, lastCompletedDate: null },
@@ -42,9 +43,14 @@ export default function App() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY)
-      .then((raw) => {
-        setHabits(raw ? JSON.parse(raw) : DEFAULT_HABITS);
+    Promise.all([AsyncStorage.getItem(STORAGE_KEY), AsyncStorage.getItem(SEEDED_KEY)])
+      .then(([raw, seeded]) => {
+        if (!seeded) {
+          setHabits(DEFAULT_HABITS);
+          AsyncStorage.setItem(SEEDED_KEY, 'true');
+        } else {
+          setHabits(raw ? JSON.parse(raw) : []);
+        }
       })
       .finally(() => setLoaded(true));
   }, []);
