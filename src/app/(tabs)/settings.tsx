@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, DevSettings, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   cancelAllNudges,
   getCurrentPermissionStatus,
+  notificationsSupported,
   requestNotificationPermission,
 } from '../../lib/notifications';
-import { getNotificationPrefs, setNotificationPrefs } from '../../lib/storage';
+import { getNotificationPrefs, resetAllData, setNotificationPrefs } from '../../lib/storage';
 import { colors } from '../../theme/colors';
 import type { NotificationPermissionStatus } from '../../types';
 
@@ -37,6 +38,24 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleResetData = () => {
+    Alert.alert(
+      'Reset all data?',
+      'This deletes every habit, streak, and challenge on this device. This can’t be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            await resetAllData();
+            DevSettings.reload();
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <Text style={styles.title}>Settings</Text>
@@ -45,18 +64,24 @@ export default function SettingsScreen() {
         <View style={styles.rowText}>
           <Text style={styles.rowLabel}>Daily reminders</Text>
           <Text style={styles.rowSubtitle}>
-            {permissionStatus === 'denied'
-              ? 'Notifications are blocked in system settings.'
-              : 'A quick nudge if a habit is still pending today.'}
+            {!notificationsSupported()
+              ? 'Notifications need a development build here — not available in Expo Go on Android.'
+              : permissionStatus === 'denied'
+                ? 'Notifications are blocked in system settings.'
+                : 'A quick nudge if a habit is still pending today.'}
           </Text>
         </View>
         <Switch
           value={enabled}
           onValueChange={handleToggle}
-          disabled={!loaded}
+          disabled={!loaded || !notificationsSupported()}
           trackColor={{ true: colors.accent, false: colors.border }}
         />
       </View>
+
+      <Pressable style={styles.resetRow} onPress={handleResetData}>
+        <Text style={styles.resetRowText}>Reset all data</Text>
+      </Pressable>
     </SafeAreaView>
   );
 }
@@ -97,5 +122,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
     marginTop: 4,
+  },
+  resetRow: {
+    marginTop: 24,
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  resetRowText: {
+    color: colors.danger,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

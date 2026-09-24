@@ -11,11 +11,12 @@ import {
 } from 'react';
 import { AppState } from 'react-native';
 import { daysElapsedSince, todayKey, yesterdayKey } from '../lib/date';
+import { cancelHabitReminderById } from '../lib/notifications';
 import {
   getChallenges,
   getHabits,
   getMeta,
-  migrateLegacyDataIfNeeded,
+  initializeStorageIfNeeded,
   setChallenges as persistChallenges,
   setHabits as persistHabits,
   setMeta,
@@ -32,6 +33,7 @@ type AddHabitInput = {
   type: HabitType;
   targetCount: number;
   reminderIntention?: string;
+  reminderTime?: string | null;
 };
 
 type HabitsContextValue = {
@@ -41,7 +43,10 @@ type HabitsContextValue = {
   onboardingComplete: boolean;
   completeOnboarding: () => void;
   addHabit: (input: AddHabitInput, opts?: { startChallenge?: boolean }) => Habit;
-  editHabit: (id: string, patch: Partial<Pick<Habit, 'name' | 'targetCount' | 'reminderIntention'>>) => void;
+  editHabit: (
+    id: string,
+    patch: Partial<Pick<Habit, 'name' | 'targetCount' | 'reminderIntention' | 'reminderTime' | 'reminderNotificationId'>>
+  ) => void;
   deleteHabit: (id: string) => void;
   completeBinary: (id: string) => CompletionResult;
   incrementCount: (id: string) => CompletionResult;
@@ -89,6 +94,9 @@ export function HabitsProvider({ children }: { children: ReactNode }) {
   // target/finish the challenge" back to the caller for reward triggering).
   const habitsRef = useRef<Habit[]>(habits);
   const challengesRef = useRef<Challenge[]>(challenges);
+  // `seeded` only ever flips false->true once, inside initializeStorageIfNeeded;
+  // stashed here so the meta-persisting effect below doesn't need to reset it.
+  const seededRef = useRef(true);
   useEffect(() => {
     habitsRef.current = habits;
   }, [habits]);
@@ -98,11 +106,12 @@ export function HabitsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     (async () => {
-      await migrateLegacyDataIfNeeded();
+      await initializeStorageIfNeeded();
       const [h, c, meta] = await Promise.all([getHabits(), getChallenges(), getMeta()]);
       setHabitsState(h);
       setChallengesState(reconcileChallenges(c));
       setOnboardingComplete(meta.onboardingComplete);
+      seededRef.current = meta.seeded;
       setLoaded(true);
     })();
   }, []);
@@ -116,7 +125,7 @@ export function HabitsProvider({ children }: { children: ReactNode }) {
   }, [challenges, loaded]);
 
   useEffect(() => {
-    if (loaded) setMeta({ onboardingComplete, schemaVersion: 2 });
+    if (loaded) setMeta({ onboardingComplete, schemaVersion: 2, seeded: seededRef.current });
   }, [onboardingComplete, loaded]);
 
   // Re-check challenge windows whenever the app comes back to the foreground,
@@ -156,6 +165,8 @@ export function HabitsProvider({ children }: { children: ReactNode }) {
       lastCompletedDate: null,
       completions: {},
       reminderIntention: input.reminderIntention,
+      reminderTime: input.reminderTime ?? null,
+      reminderNotificationId: null,
     };
     setHabitsState((prev) => [...prev, habit]);
     if (opts?.startChallenge) {
@@ -169,6 +180,10 @@ export function HabitsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const deleteHabit = useCallback((id: string) => {
+    const habit = habitsRef.current.find((h) => h.id === id);
+    if (habit?.reminderNotificationId) {
+      cancelHabitReminderById(habit.reminderNotificationId);
+    }
     setHabitsState((prev) => prev.filter((h) => h.id !== id));
     setChallengesState((prev) => prev.filter((c) => c.habitId !== id));
   }, []);

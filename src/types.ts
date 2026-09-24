@@ -11,6 +11,8 @@ export type Habit = {
   lastCompletedDate: string | null; // dateKey of the last fully-completed day
   completions: Record<string, number>; // dateKey -> count logged that day
   reminderIntention?: string;
+  reminderTime?: string | null; // "HH:mm" (24-hour), null/undefined = no per-habit reminder
+  reminderNotificationId?: string | null; // scheduled expo-notifications id for reminderTime, for cancel/reschedule
   archivedAt?: string | null;
 };
 
@@ -42,4 +44,5 @@ export type NotificationPrefs = {
 export type AppMeta = {
   onboardingComplete: boolean;
   schemaVersion: number;
+  seeded: boolean;
 };

@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { formatTimeOfDay, minutesToTimeOfDay, parseTimeOfDay } from '../lib/date';
+import { notificationsSupported } from '../lib/notifications';
 import { colors } from '../theme/colors';
 import type { HabitType } from '../types';
 
@@ -8,6 +10,7 @@ export type HabitFormValues = {
   type: HabitType;
   targetCount: number;
   reminderIntention: string;
+  reminderTime: string | null;
 };
 
 type Props = {
@@ -16,11 +19,20 @@ type Props = {
   onSubmit: (values: HabitFormValues) => void;
 };
 
+const REMINDER_STEP_MINUTES = 30;
+const DEFAULT_REMINDER_MINUTES = 9 * 60; // 9:00 AM
+
 export function HabitForm({ initialValues, submitLabel, onSubmit }: Props) {
   const [name, setName] = useState(initialValues?.name ?? '');
   const [type, setType] = useState<HabitType>(initialValues?.type ?? 'binary');
   const [targetCount, setTargetCount] = useState(initialValues?.targetCount ?? 3);
   const [reminderIntention, setReminderIntention] = useState(initialValues?.reminderIntention ?? '');
+
+  const initialTime = parseTimeOfDay(initialValues?.reminderTime);
+  const [reminderEnabled, setReminderEnabled] = useState(!!initialTime);
+  const [reminderMinutes, setReminderMinutes] = useState(
+    initialTime ? initialTime.hour * 60 + initialTime.minute : DEFAULT_REMINDER_MINUTES
+  );
 
   const canSubmit = name.trim().length > 0 && (type === 'binary' || targetCount >= 2);
 
@@ -31,7 +43,12 @@ export function HabitForm({ initialValues, submitLabel, onSubmit }: Props) {
       type,
       targetCount: type === 'binary' ? 1 : targetCount,
       reminderIntention: reminderIntention.trim(),
+      reminderTime: reminderEnabled ? minutesToTimeOfDay(reminderMinutes) : null,
     });
+  };
+
+  const adjustReminderTime = (deltaMinutes: number) => {
+    setReminderMinutes((m) => (m + deltaMinutes + 24 * 60) % (24 * 60));
   };
 
   return (
@@ -98,6 +115,37 @@ export function HabitForm({ initialValues, submitLabel, onSubmit }: Props) {
         returnKeyType="done"
         onSubmitEditing={submit}
       />
+
+      <Text style={styles.label}>Daily reminder</Text>
+      {notificationsSupported() ? (
+        <>
+          <View style={styles.reminderToggleRow}>
+            <Text style={styles.reminderToggleLabel}>Remind me at a set time</Text>
+            <Switch
+              value={reminderEnabled}
+              onValueChange={setReminderEnabled}
+              trackColor={{ true: colors.accent, false: colors.border }}
+            />
+          </View>
+          {reminderEnabled && (
+            <View style={[styles.stepper, styles.reminderStepper]}>
+              <Pressable style={styles.stepperButton} onPress={() => adjustReminderTime(-REMINDER_STEP_MINUTES)}>
+                <Text style={styles.stepperButtonText}>−</Text>
+              </Pressable>
+              <Text style={styles.reminderTimeValue}>
+                {formatTimeOfDay(Math.floor(reminderMinutes / 60), reminderMinutes % 60)}
+              </Text>
+              <Pressable style={styles.stepperButton} onPress={() => adjustReminderTime(REMINDER_STEP_MINUTES)}>
+                <Text style={styles.stepperButtonText}>+</Text>
+              </Pressable>
+            </View>
+          )}
+        </>
+      ) : (
+        <Text style={styles.reminderUnsupportedText}>
+          Reminders need a development build here — not available in Expo Go on Android.
+        </Text>
+      )}
 
       <Pressable
         style={[styles.submitButton, !canSubmit && styles.submitButtonDisabled]}
@@ -176,6 +224,36 @@ const styles = StyleSheet.create({
     fontSize: 22,
     color: colors.textPrimary,
     fontWeight: '700',
+  },
+  reminderToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  reminderToggleLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  reminderTimeValue: {
+    fontSize: 18,
+    color: colors.textPrimary,
+    fontWeight: '700',
+    minWidth: 90,
+    textAlign: 'center',
+  },
+  reminderUnsupportedText: {
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  reminderStepper: {
+    marginTop: 12,
   },
   stepperValue: {
     fontSize: 22,

@@ -7,7 +7,7 @@ import type { CompletionResult } from '../../hooks/useHabitsStore';
 import { useHabitsStore } from '../../hooks/useHabitsStore';
 import { useRewards } from '../../hooks/useRewards';
 import { todayKey } from '../../lib/date';
-import { markSoftAskDeclined, requestNotificationPermission } from '../../lib/notifications';
+import { markSoftAskDeclined, notificationsSupported, requestNotificationPermission } from '../../lib/notifications';
 import { getNotificationPrefs } from '../../lib/storage';
 import { colors } from '../../theme/colors';
 import type { Habit } from '../../types';
@@ -18,6 +18,7 @@ export default function TodayScreen() {
   const [showSoftAsk, setShowSoftAsk] = useState(false);
 
   const maybeShowSoftAsk = async () => {
+    if (!notificationsSupported()) return;
     const prefs = await getNotificationPrefs();
     if (!prefs.hasPromptedSoftAsk) setShowSoftAsk(true);
   };
@@ -116,9 +117,6 @@ export default function TodayScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Text style={styles.title}>Today</Text>
-        <Pressable style={styles.addButton} onPress={() => router.push('/add-habit')}>
-          <Text style={styles.addButtonText}>+ Habit</Text>
-        </Pressable>
       </View>
 
       <FlatList
@@ -128,6 +126,11 @@ export default function TodayScreen() {
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <Text style={styles.emptyText}>No habits yet. Add one to get started.</Text>
+        }
+        ListFooterComponent={
+          <Pressable style={styles.addButton} onPress={() => router.push('/add-habit')}>
+            <Text style={styles.addButtonText}>+ Add habit</Text>
+          </Pressable>
         }
       />
 
@@ -155,9 +158,6 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     marginBottom: 16,
   },
   title: {
@@ -167,14 +167,15 @@ const styles = StyleSheet.create({
   },
   addButton: {
     backgroundColor: colors.accent,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 4,
   },
   addButtonText: {
     color: colors.background,
     fontWeight: '700',
-    fontSize: 13,
+    fontSize: 15,
   },
   list: {
     flexGrow: 1,
