@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 type Habit = {
   id: string;
@@ -38,6 +39,14 @@ const yesterdayKey = () => {
 };
 
 export default function App() {
+  return (
+    <SafeAreaProvider>
+      <HabitTracker />
+    </SafeAreaProvider>
+  );
+}
+
+function HabitTracker() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [newHabitName, setNewHabitName] = useState('');
   const [loaded, setLoaded] = useState(false);
@@ -120,39 +129,42 @@ export default function App() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <StatusBar style="light" />
-      <Text style={styles.title}>Habit Tracker</Text>
-      <Text style={styles.subtitle}>Demo app · tap a habit to mark today done</Text>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
+      >
+        <StatusBar style="light" />
+        <Text style={styles.title}>Habit Tracker</Text>
+        <Text style={styles.subtitle}>Demo app · tap a habit to mark today done</Text>
 
-      <FlatList
-        data={habits}
-        keyExtractor={(item) => item.id}
-        renderItem={renderHabit}
-        contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No habits yet. Add one below to get started.</Text>
-        }
-      />
-
-      <View style={styles.addRow}>
-        <TextInput
-          style={styles.input}
-          placeholder="New habit, e.g. Drink water"
-          placeholderTextColor="#565670"
-          value={newHabitName}
-          onChangeText={setNewHabitName}
-          onSubmitEditing={addHabit}
-          returnKeyType="done"
+        <FlatList
+          data={habits}
+          keyExtractor={(item) => item.id}
+          renderItem={renderHabit}
+          contentContainerStyle={styles.list}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>No habits yet. Add one below to get started.</Text>
+          }
         />
-        <Pressable style={styles.addButton} onPress={addHabit}>
-          <Text style={styles.addButtonText}>Add</Text>
-        </Pressable>
-      </View>
-    </KeyboardAvoidingView>
+
+        <View style={styles.addRow}>
+          <TextInput
+            style={styles.input}
+            placeholder="New habit, e.g. Drink water"
+            placeholderTextColor="#565670"
+            value={newHabitName}
+            onChangeText={setNewHabitName}
+            onSubmitEditing={addHabit}
+            returnKeyType="done"
+          />
+          <Pressable style={styles.addButton} onPress={addHabit}>
+            <Text style={styles.addButtonText}>Add</Text>
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -160,7 +172,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0e0e17',
-    paddingTop: 60,
+  },
+  flex: {
+    flex: 1,
+    paddingTop: 16,
     paddingHorizontal: 20,
   },
   title: {
@@ -231,7 +246,7 @@ const styles = StyleSheet.create({
   addRow: {
     flexDirection: 'row',
     marginTop: 8,
-    marginBottom: 20,
+    marginBottom: 8,
   },
   input: {
     flex: 1,
