@@ -1,0 +1,45 @@
+export type HabitType = 'binary' | 'count';
+
+export type Habit = {
+  id: string;
+  name: string;
+  type: HabitType;
+  targetCount: number; // 1 for binary habits
+  createdAt: string; // ISO timestamp
+  streak: number;
+  bestStreak: number;
+  lastCompletedDate: string | null; // dateKey of the last fully-completed day
+  completions: Record<string, number>; // dateKey -> count logged that day
+  reminderIntention?: string;
+  archivedAt?: string | null;
+};
+
+export type ChallengeStatus = 'active' | 'completed' | 'failed';
+
+export type Challenge = {
+  id: string;
+  habitId: string;
+  kind: '3-day-kickstart';
+  startDateKey: string;
+  durationDays: number;
+  completedDays: string[];
+  status: ChallengeStatus;
+  rewardClaimed: boolean;
+};
+
+export type NotificationPermissionStatus = 'undetermined' | 'granted' | 'denied';
+
+export type NotificationPrefs = {
+  enabled: boolean;
+  permissionStatus: NotificationPermissionStatus;
+  hasPromptedSoftAsk: boolean;
+  scheduledIds: {
+    midday: string | null;
+    evening: string | null;
+  };
+};
+
+export type AppMeta = {
+  onboardingComplete: boolean;
+  schemaVersion: number;
+};
