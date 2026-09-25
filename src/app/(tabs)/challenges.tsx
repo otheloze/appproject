@@ -20,6 +20,7 @@ export default function ChallengesScreen() {
   const { habits, challenges, startChallenge, activeChallengeForHabit } = useHabitsStore();
 
   const habitName = (habitId: string) => habits.find((h) => h.id === habitId)?.name ?? 'Deleted habit';
+  const habitIcon = (habitId: string) => habits.find((h) => h.id === habitId)?.icon ?? '🗑️';
   const habitsWithoutChallenge = habits.filter((h) => !activeChallengeForHabit(h.id));
   const sortedChallenges = [...challenges].reverse();
 
@@ -34,7 +35,10 @@ export default function ChallengesScreen() {
         renderItem={({ item }) => (
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.habitName}>{habitName(item.habitId)}</Text>
+              <View style={styles.cardHeaderName}>
+                <Text style={styles.habitIcon}>{habitIcon(item.habitId)}</Text>
+                <Text style={styles.habitName}>{habitName(item.habitId)}</Text>
+              </View>
               <Text style={[styles.statusText, { color: STATUS_COLOR[item.status] }]}>
                 {STATUS_LABEL[item.status]}
               </Text>
@@ -50,7 +54,10 @@ export default function ChallengesScreen() {
               <Text style={styles.footerTitle}>Start a new 3-day challenge</Text>
               {habitsWithoutChallenge.map((h) => (
                 <Pressable key={h.id} style={styles.startRow} onPress={() => startChallenge(h.id)}>
-                  <Text style={styles.startRowText}>{h.name}</Text>
+                  <View style={styles.startRowName}>
+                    <Text style={styles.habitIcon}>{h.icon}</Text>
+                    <Text style={styles.startRowText}>{h.name}</Text>
+                  </View>
                   <Text style={styles.startRowCta}>Start →</Text>
                 </Pressable>
               ))}
@@ -97,6 +104,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 6,
   },
+  cardHeaderName: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 12,
+  },
+  habitIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
   habitName: {
     fontSize: 16,
     fontWeight: '600',
@@ -130,6 +147,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
     marginBottom: 8,
+  },
+  startRowName: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   startRowText: {
     color: colors.textPrimary,

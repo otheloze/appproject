@@ -17,7 +17,10 @@ export default function ProgressScreen() {
         {habits.map((habit) => (
           <View key={habit.id} style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.habitName}>{habit.name}</Text>
+              <View style={styles.cardHeaderName}>
+                <Text style={styles.habitIcon}>{habit.icon}</Text>
+                <Text style={styles.habitName}>{habit.name}</Text>
+              </View>
               <Text style={styles.streakText}>
                 🔥 {habit.streak} · best {habit.bestStreak}
               </Text>
@@ -64,6 +67,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
+  },
+  cardHeaderName: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 12,
+  },
+  habitIcon: {
+    fontSize: 18,
+    marginRight: 8,
   },
   habitName: {
     fontSize: 16,

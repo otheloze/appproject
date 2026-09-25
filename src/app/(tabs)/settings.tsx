@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, DevSettings, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -79,6 +80,11 @@ export default function SettingsScreen() {
         />
       </View>
 
+      <Pressable style={styles.linkRow} onPress={() => router.push('/how-it-works')}>
+        <Text style={styles.linkRowText}>How this app works</Text>
+        <Text style={styles.linkRowChevron}>›</Text>
+      </Pressable>
+
       <Pressable style={styles.resetRow} onPress={handleResetData}>
         <Text style={styles.resetRowText}>Reset all data</Text>
       </Pressable>
@@ -122,6 +128,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
     marginTop: 4,
+  },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+    marginTop: 16,
+  },
+  linkRowText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  linkRowChevron: {
+    fontSize: 18,
+    color: colors.textSecondary,
   },
   resetRow: {
     marginTop: 24,

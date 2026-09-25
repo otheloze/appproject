@@ -57,6 +57,7 @@ export default function TodayScreen() {
         style={styles.habitRow}
         onPress={() => router.push({ pathname: '/add-habit', params: { habitId: item.id } })}
       >
+        <Text style={styles.habitIcon}>{item.icon}</Text>
         <View style={styles.habitInfo}>
           <View style={styles.habitNameRow}>
             <Text style={styles.habitName}>{item.name}</Text>
@@ -195,6 +196,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  habitIcon: {
+    fontSize: 24,
+    marginRight: 12,
   },
   habitInfo: {
     flex: 1,

@@ -26,6 +26,7 @@ export default function AddHabitScreen() {
     if (editingHabit) {
       editHabit(editingHabit.id, {
         name: values.name,
+        icon: values.icon,
         targetCount: values.targetCount,
         reminderIntention: values.reminderIntention || undefined,
         reminderTime: values.reminderTime,
@@ -37,6 +38,7 @@ export default function AddHabitScreen() {
     addHabit(
       {
         name: values.name,
+        icon: values.icon,
         type: values.type,
         targetCount: values.targetCount,
         reminderIntention: values.reminderIntention || undefined,
@@ -81,6 +83,7 @@ export default function AddHabitScreen() {
             editingHabit
               ? {
                   name: editingHabit.name,
+                  icon: editingHabit.icon,
                   type: editingHabit.type,
                   targetCount: editingHabit.targetCount,
                   reminderIntention: editingHabit.reminderIntention ?? '',

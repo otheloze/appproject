@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { formatTimeOfDay, minutesToTimeOfDay, parseTimeOfDay } from '../lib/date';
+import { DEFAULT_HABIT_ICON, HABIT_ICONS } from '../lib/icons';
 import { notificationsSupported } from '../lib/notifications';
 import { colors } from '../theme/colors';
 import type { HabitType } from '../types';
 
 export type HabitFormValues = {
   name: string;
+  icon: string;
   type: HabitType;
   targetCount: number;
   reminderIntention: string;
@@ -24,6 +26,7 @@ const DEFAULT_REMINDER_MINUTES = 9 * 60; // 9:00 AM
 
 export function HabitForm({ initialValues, submitLabel, onSubmit }: Props) {
   const [name, setName] = useState(initialValues?.name ?? '');
+  const [icon, setIcon] = useState(initialValues?.icon ?? DEFAULT_HABIT_ICON);
   const [type, setType] = useState<HabitType>(initialValues?.type ?? 'binary');
   const [targetCount, setTargetCount] = useState(initialValues?.targetCount ?? 3);
   const [reminderIntention, setReminderIntention] = useState(initialValues?.reminderIntention ?? '');
@@ -40,6 +43,7 @@ export function HabitForm({ initialValues, submitLabel, onSubmit }: Props) {
     if (!canSubmit) return;
     onSubmit({
       name: name.trim(),
+      icon,
       type,
       targetCount: type === 'binary' ? 1 : targetCount,
       reminderIntention: reminderIntention.trim(),
@@ -63,6 +67,19 @@ export function HabitForm({ initialValues, submitLabel, onSubmit }: Props) {
         autoFocus
         returnKeyType="next"
       />
+
+      <Text style={styles.label}>Icon</Text>
+      <View style={styles.iconGrid}>
+        {HABIT_ICONS.map((option) => (
+          <Pressable
+            key={option}
+            style={[styles.iconOption, icon === option && styles.iconOptionActive]}
+            onPress={() => setIcon(option)}
+          >
+            <Text style={styles.iconOptionEmoji}>{option}</Text>
+          </Pressable>
+        ))}
+      </View>
 
       <Text style={styles.label}>How often per day?</Text>
       <View style={styles.typeRow}>
@@ -175,6 +192,28 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     color: colors.textPrimary,
+  },
+  iconGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  iconOption: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconOptionActive: {
+    borderColor: colors.accent,
+    backgroundColor: colors.accent + '22',
+  },
+  iconOptionEmoji: {
+    fontSize: 22,
   },
   typeRow: {
     flexDirection: 'row',

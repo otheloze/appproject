@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { WelcomeLoadingScreen } from '../components/WelcomeLoadingScreen';
 import { useHabitReminders } from '../hooks/useHabitReminders';
 import { HabitsProvider, useHabitsStore } from '../hooks/useHabitsStore';
 import { useNotificationScheduler } from '../hooks/useNotificationScheduler';
@@ -37,17 +38,21 @@ function RootNavigator() {
   // into it as the initial route — and never leave, since a route that
   // stays registered throughout never triggers a protected-route redirect.
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
-      <Stack.Protected guard={loaded && !onboardingComplete}>
-        <Stack.Screen name="onboarding" />
-      </Stack.Protected>
-      <Stack.Protected guard={loaded && onboardingComplete}>
-        <Stack.Screen name="(tabs)" />
-      </Stack.Protected>
-      <Stack.Protected guard={loaded}>
-        <Stack.Screen name="add-habit" options={{ presentation: 'modal' }} />
-      </Stack.Protected>
-    </Stack>
+    <>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
+        <Stack.Protected guard={loaded && !onboardingComplete}>
+          <Stack.Screen name="onboarding" />
+        </Stack.Protected>
+        <Stack.Protected guard={loaded && onboardingComplete}>
+          <Stack.Screen name="(tabs)" />
+        </Stack.Protected>
+        <Stack.Protected guard={loaded}>
+          <Stack.Screen name="add-habit" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="how-it-works" options={{ presentation: 'modal' }} />
+        </Stack.Protected>
+      </Stack>
+      {!loaded && <WelcomeLoadingScreen />}
+    </>
   );
 }
 

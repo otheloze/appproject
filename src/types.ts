@@ -3,6 +3,7 @@ export type HabitType = 'binary' | 'count';
 export type Habit = {
   id: string;
   name: string;
+  icon: string; // emoji, chosen from a fixed picker set (see HABIT_ICONS)
   type: HabitType;
   targetCount: number; // 1 for binary habits
   createdAt: string; // ISO timestamp

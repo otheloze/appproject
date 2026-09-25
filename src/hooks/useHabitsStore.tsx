@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { AppState } from 'react-native';
 import { daysElapsedSince, todayKey, yesterdayKey } from '../lib/date';
+import { DEFAULT_HABIT_ICON } from '../lib/icons';
 import { cancelHabitReminderById } from '../lib/notifications';
 import {
   getChallenges,
@@ -30,6 +31,7 @@ export type CompletionResult = {
 
 type AddHabitInput = {
   name: string;
+  icon?: string;
   type: HabitType;
   targetCount: number;
   reminderIntention?: string;
@@ -45,7 +47,9 @@ type HabitsContextValue = {
   addHabit: (input: AddHabitInput, opts?: { startChallenge?: boolean }) => Habit;
   editHabit: (
     id: string,
-    patch: Partial<Pick<Habit, 'name' | 'targetCount' | 'reminderIntention' | 'reminderTime' | 'reminderNotificationId'>>
+    patch: Partial<
+      Pick<Habit, 'name' | 'icon' | 'targetCount' | 'reminderIntention' | 'reminderTime' | 'reminderNotificationId'>
+    >
   ) => void;
   deleteHabit: (id: string) => void;
   completeBinary: (id: string) => CompletionResult;
@@ -157,6 +161,7 @@ export function HabitsProvider({ children }: { children: ReactNode }) {
     const habit: Habit = {
       id: Date.now().toString(),
       name: input.name,
+      icon: input.icon || DEFAULT_HABIT_ICON,
       type: input.type,
       targetCount: input.type === 'binary' ? 1 : Math.max(1, input.targetCount),
       createdAt: new Date().toISOString(),
