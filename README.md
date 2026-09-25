@@ -7,7 +7,7 @@ A mobile habit tracker built with Expo and React Native. Create a habit, check i
 - **Two habit types** — simple yes/no habits, or count habits with a daily target (e.g. "drink 8 glasses of water").
 - **Streaks** — current and best streak tracked per habit, with a calendar heatmap of your consistency on the Progress tab.
 - **3-day kickstart challenges** — new habits can start with a short challenge; complete all three days for a bonus reward.
-- **Custom icons** — pick an emoji icon per habit to tell them apart at a glance.
+- **Automatic icons** — each habit gets an emoji icon inferred from its name (e.g. "Drink water" → 💧), so habits are easy to tell apart at a glance.
 - **Reminders** — general daily check-in nudges, plus an optional custom reminder time per habit.
 - **Rewards** — haptic + particle + chime celebration on completions, with a bigger variant for finishing a challenge.
 - **Offline-first** — all data is stored locally on-device (AsyncStorage); nothing leaves your phone.

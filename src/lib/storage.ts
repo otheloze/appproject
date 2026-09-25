@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { DEFAULT_HABIT_ICON } from './icons';
+import { iconForHabitName } from './icons';
 import type { AppMeta, Challenge, Habit, NotificationPrefs } from '../types';
 
 const HABITS_KEY = 'habit-tracker-v2-habits';
@@ -132,7 +132,7 @@ export const initializeStorageIfNeeded = async (): Promise<void> => {
         const migrated: Habit[] = legacyHabits.map((h) => ({
           id: h.id,
           name: h.name,
-          icon: DEFAULT_HABIT_ICON,
+          icon: iconForHabitName(h.name),
           type: 'binary',
           targetCount: 1,
           createdAt: new Date().toISOString(),
