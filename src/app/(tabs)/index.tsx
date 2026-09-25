@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NotificationSoftAsk } from '../../components/NotificationSoftAsk';
+import { useAuth } from '../../hooks/useAuth';
 import type { CompletionResult } from '../../hooks/useHabitsStore';
 import { useHabitsStore } from '../../hooks/useHabitsStore';
 import { useRewards } from '../../hooks/useRewards';
@@ -15,11 +16,12 @@ import type { Habit } from '../../types';
 export default function TodayScreen() {
   const { habits, completeBinary, incrementCount, undoToday, activeChallengeForHabit } = useHabitsStore();
   const { celebrateHabit, celebrateChallenge } = useRewards();
+  const { userId, userName } = useAuth();
   const [showSoftAsk, setShowSoftAsk] = useState(false);
 
   const maybeShowSoftAsk = async () => {
-    if (!notificationsSupported()) return;
-    const prefs = await getNotificationPrefs();
+    if (!notificationsSupported() || !userId) return;
+    const prefs = await getNotificationPrefs(userId);
     if (!prefs.hasPromptedSoftAsk) setShowSoftAsk(true);
   };
 
@@ -117,6 +119,7 @@ export default function TodayScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
+        <Text style={styles.welcome}>Welcome back{userName ? `, ${userName}` : ''} 👋</Text>
         <Text style={styles.title}>Today</Text>
       </View>
 
@@ -139,11 +142,11 @@ export default function TodayScreen() {
         <NotificationSoftAsk
           onAccept={async () => {
             setShowSoftAsk(false);
-            await requestNotificationPermission();
+            if (userId) await requestNotificationPermission(userId);
           }}
           onDecline={async () => {
             setShowSoftAsk(false);
-            await markSoftAskDeclined();
+            if (userId) await markSoftAskDeclined(userId);
           }}
         />
       )}
@@ -160,6 +163,12 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 16,
+  },
+  welcome: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    marginBottom: 2,
   },
   title: {
     fontSize: 28,

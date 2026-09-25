@@ -6,7 +6,12 @@ import type { Challenge, Habit } from '../types';
 /** Reschedules the two daily local nudges whenever habit/challenge state
  * changes, and again whenever the app returns to the foreground (since
  * notification content is fixed at schedule time, not fire time). */
-export function useNotificationScheduler(habits: Habit[], challenges: Challenge[], loaded: boolean) {
+export function useNotificationScheduler(
+  userId: string | null,
+  habits: Habit[],
+  challenges: Challenge[],
+  loaded: boolean
+) {
   const habitsRef = useRef(habits);
   const challengesRef = useRef(challenges);
   useEffect(() => {
@@ -15,14 +20,15 @@ export function useNotificationScheduler(habits: Habit[], challenges: Challenge[
   }, [habits, challenges]);
 
   useEffect(() => {
-    if (!loaded) return;
-    scheduleDailyNudges(habits, challenges);
-  }, [habits, challenges, loaded]);
+    if (!loaded || !userId) return;
+    scheduleDailyNudges(userId, habits, challenges);
+  }, [userId, habits, challenges, loaded]);
 
   useEffect(() => {
+    if (!userId) return;
     const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') scheduleDailyNudges(habitsRef.current, challengesRef.current);
+      if (state === 'active') scheduleDailyNudges(userId, habitsRef.current, challengesRef.current);
     });
     return () => sub.remove();
-  }, []);
+  }, [userId]);
 }

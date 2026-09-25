@@ -12,6 +12,7 @@ import type { Habit } from '../types';
  * only a mismatch triggers a cancel+reschedule.
  */
 export function useHabitReminders(
+  userId: string | null,
   habits: Habit[],
   loaded: boolean,
   onReminderIdChange: (habitId: string, reminderNotificationId: string | null) => void
@@ -19,11 +20,11 @@ export function useHabitReminders(
   const signaturesRef = useRef<Record<string, string | null>>({});
 
   useEffect(() => {
-    if (!loaded) return;
+    if (!loaded || !userId) return;
     let cancelled = false;
 
     (async () => {
-      const prefs = await getNotificationPrefs();
+      const prefs = await getNotificationPrefs(userId);
       for (const habit of habits) {
         const desired = habit.reminderTime && prefs.enabled
           ? `${habit.reminderTime}::${habit.reminderIntention ?? ''}`
@@ -32,7 +33,7 @@ export function useHabitReminders(
         signaturesRef.current[habit.id] = desired;
 
         await cancelHabitReminderById(habit.reminderNotificationId);
-        const newId = desired ? await scheduleHabitReminder(habit) : null;
+        const newId = desired ? await scheduleHabitReminder(userId, habit) : null;
         if (cancelled) return;
         if (newId !== (habit.reminderNotificationId ?? null)) {
           onReminderIdChange(habit.id, newId);
@@ -43,7 +44,7 @@ export function useHabitReminders(
     return () => {
       cancelled = true;
     };
-  }, [habits, loaded, onReminderIdChange]);
+  }, [userId, habits, loaded, onReminderIdChange]);
 
   useEffect(() => {
     const known = new Set(habits.map((h) => h.id));

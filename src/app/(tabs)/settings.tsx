@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, DevSettings, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '../../hooks/useAuth';
 import {
   cancelAllNudges,
   getCurrentPermissionStatus,
@@ -9,52 +10,67 @@ import {
   requestNotificationPermission,
 } from '../../lib/notifications';
 import { getNotificationPrefs, resetAllData, setNotificationPrefs } from '../../lib/storage';
+import { deleteRemoteData, pushNotificationPrefs } from '../../lib/sync';
 import { colors } from '../../theme/colors';
 import type { NotificationPermissionStatus } from '../../types';
 
 export default function SettingsScreen() {
+  const { userId, signOut } = useAuth();
   const [enabled, setEnabled] = useState(false);
   const [permissionStatus, setPermissionStatus] = useState<NotificationPermissionStatus>('undetermined');
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    if (!userId) return;
     (async () => {
-      const [prefs, osStatus] = await Promise.all([getNotificationPrefs(), getCurrentPermissionStatus()]);
+      const [prefs, osStatus] = await Promise.all([getNotificationPrefs(userId), getCurrentPermissionStatus()]);
       setEnabled(prefs.enabled && osStatus === 'granted');
       setPermissionStatus(osStatus as NotificationPermissionStatus);
       setLoaded(true);
     })();
-  }, []);
+  }, [userId]);
 
   const handleToggle = async (next: boolean) => {
+    if (!userId) return;
     if (next) {
-      const granted = await requestNotificationPermission();
+      const granted = await requestNotificationPermission(userId);
       setEnabled(granted);
       setPermissionStatus(granted ? 'granted' : 'denied');
     } else {
       setEnabled(false);
-      const prefs = await getNotificationPrefs();
-      await setNotificationPrefs({ ...prefs, enabled: false });
-      await cancelAllNudges();
+      const prefs = await getNotificationPrefs(userId);
+      const updatedPrefs = { ...prefs, enabled: false };
+      await setNotificationPrefs(userId, updatedPrefs);
+      pushNotificationPrefs(userId, updatedPrefs);
+      await cancelAllNudges(userId);
     }
   };
 
   const handleResetData = () => {
+    if (!userId) return;
     Alert.alert(
       'Reset all data?',
-      'This deletes every habit, streak, and challenge on this device. This can’t be undone.',
+      'This deletes every habit, streak, and challenge — on this device and in your account. This can’t be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Reset',
           style: 'destructive',
           onPress: async () => {
-            await resetAllData();
+            await resetAllData(userId);
+            await deleteRemoteData(userId);
             DevSettings.reload();
           },
         },
       ]
     );
+  };
+
+  const handleSignOut = () => {
+    Alert.alert('Sign out?', 'Your data stays backed up to your account.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign out', style: 'destructive', onPress: signOut },
+    ]);
   };
 
   return (
@@ -87,6 +103,10 @@ export default function SettingsScreen() {
 
       <Pressable style={styles.resetRow} onPress={handleResetData}>
         <Text style={styles.resetRowText}>Reset all data</Text>
+      </Pressable>
+
+      <Pressable style={styles.resetRow} onPress={handleSignOut}>
+        <Text style={styles.signOutRowText}>Sign out</Text>
       </Pressable>
     </SafeAreaView>
   );
@@ -156,6 +176,11 @@ const styles = StyleSheet.create({
   },
   resetRowText: {
     color: colors.danger,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  signOutRowText: {
+    color: colors.textSecondary,
     fontSize: 14,
     fontWeight: '600',
   },

@@ -2,7 +2,8 @@ import { isRunningInExpoGo } from 'expo';
 import { Platform } from 'react-native';
 import { parseTimeOfDay, todayKey } from './date';
 import { getNotificationPrefs, setNotificationPrefs } from './storage';
-import type { Challenge, Habit } from '../types';
+import { pushNotificationPrefs } from './sync';
+import type { Challenge, Habit, NotificationPrefs } from '../types';
 
 // expo-notifications throws the instant it's imported on Android inside Expo
 // Go (a top-level side effect in the library itself, unrelated to anything we
@@ -40,7 +41,15 @@ function dailyTrigger(Notifications: NotificationsModule, hour: number, minute: 
   return { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour, minute } as const;
 }
 
-export async function requestNotificationPermission(): Promise<boolean> {
+/** Writes notification prefs locally (for instant reads) and syncs them to
+ * Supabase in the background (best-effort — failures are swallowed since
+ * the next preference change re-syncs full state anyway). */
+async function saveNotificationPrefs(userId: string, prefs: NotificationPrefs): Promise<void> {
+  await setNotificationPrefs(userId, prefs);
+  pushNotificationPrefs(userId, prefs);
+}
+
+export async function requestNotificationPermission(userId: string): Promise<boolean> {
   const Notifications = getNotifications();
   if (!Notifications) return false;
 
@@ -48,8 +57,8 @@ export async function requestNotificationPermission(): Promise<boolean> {
     ios: { allowAlert: true, allowBadge: true, allowSound: true },
   });
   const granted = status === 'granted';
-  const prefs = await getNotificationPrefs();
-  await setNotificationPrefs({
+  const prefs = await getNotificationPrefs(userId);
+  await saveNotificationPrefs(userId, {
     ...prefs,
     enabled: granted,
     permissionStatus: granted ? 'granted' : 'denied',
@@ -67,9 +76,9 @@ export async function getCurrentPermissionStatus() {
 
 /** Records that the in-app soft-ask was shown and dismissed without
  * requesting the OS permission, so it isn't shown again. */
-export async function markSoftAskDeclined(): Promise<void> {
-  const prefs = await getNotificationPrefs();
-  await setNotificationPrefs({ ...prefs, hasPromptedSoftAsk: true });
+export async function markSoftAskDeclined(userId: string): Promise<void> {
+  const prefs = await getNotificationPrefs(userId);
+  await saveNotificationPrefs(userId, { ...prefs, hasPromptedSoftAsk: true });
 }
 
 /**
@@ -121,14 +130,14 @@ export function buildNudgeCopy(habits: Habit[], challenges: Challenge[]): string
  * fire-time callback), so this should be called on app foreground and on
  * every habit/challenge state change to keep copy from going stale.
  */
-export async function scheduleDailyNudges(habits: Habit[], challenges: Challenge[]): Promise<void> {
+export async function scheduleDailyNudges(userId: string, habits: Habit[], challenges: Challenge[]): Promise<void> {
   const Notifications = getNotifications();
   if (!Notifications) return;
 
-  const prefs = await getNotificationPrefs();
+  const prefs = await getNotificationPrefs(userId);
   if (!prefs.enabled) return;
 
-  await cancelAllNudges();
+  await cancelAllNudges(userId);
 
   const body = buildNudgeCopy(habits, challenges);
   if (!body) return;
@@ -142,19 +151,19 @@ export async function scheduleDailyNudges(habits: Habit[], challenges: Challenge
     trigger: dailyTrigger(Notifications, 19, 30),
   });
 
-  await setNotificationPrefs({
+  await saveNotificationPrefs(userId, {
     ...prefs,
     scheduledIds: { midday: middayId, evening: eveningId },
   });
 }
 
-export async function cancelAllNudges(): Promise<void> {
+export async function cancelAllNudges(userId: string): Promise<void> {
   const Notifications = getNotifications();
   if (Notifications) {
     await Notifications.cancelAllScheduledNotificationsAsync();
   }
-  const prefs = await getNotificationPrefs();
-  await setNotificationPrefs({ ...prefs, scheduledIds: { midday: null, evening: null } });
+  const prefs = await getNotificationPrefs(userId);
+  await saveNotificationPrefs(userId, { ...prefs, scheduledIds: { midday: null, evening: null } });
 }
 
 /**
@@ -164,14 +173,14 @@ export async function cancelAllNudges(): Promise<void> {
  * Callers are responsible for persisting the returned id onto the habit and
  * for cancelling any previous id via `cancelHabitReminderById` first.
  */
-export async function scheduleHabitReminder(habit: Habit): Promise<string | null> {
+export async function scheduleHabitReminder(userId: string, habit: Habit): Promise<string | null> {
   const Notifications = getNotifications();
   if (!Notifications) return null;
 
   const time = parseTimeOfDay(habit.reminderTime);
   if (!time) return null;
 
-  const prefs = await getNotificationPrefs();
+  const prefs = await getNotificationPrefs(userId);
   if (!prefs.enabled) return null;
 
   const body = habit.reminderIntention
